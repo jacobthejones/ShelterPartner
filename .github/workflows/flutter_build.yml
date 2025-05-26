@@ -67,6 +67,19 @@ jobs:
       - name: Build macOS
         run: flutter build macos
         working-directory: Flutter/shelter_partner
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: Flutter/shelter_partner
       - name: Build iOS
         run: flutter build ios --no-codesign
         working-directory: Flutter/shelter_partner

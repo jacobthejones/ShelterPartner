@@ -34,6 +34,9 @@ jobs:
         working-directory: Flutter/shelter_partner
 
   build-windows:
+    # Windows build is disabled due to use of dart:html, which is not supported on Windows.
+    # To re-enable, remove dart:html imports from lib/main.dart and any other non-web files.
+    if: false
     runs-on: windows-latest
     steps:
       - name: Checkout code

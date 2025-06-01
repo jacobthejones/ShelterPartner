@@ -3,16 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_partner/views/pages/enrichment_page.dart';
 import 'package:shelter_partner/view_models/auth_view_model.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 
 import '../../helpers/firebase_test_overrides.dart';
 import '../../helpers/test_animal_data.dart';
 import '../../helpers/test_auth_helpers.dart';
 
 void main() {
-  setUpAll(() async {
-    await loadAppFonts();
-  });
   group('EnrichmentPage Golden Tests', () {
     setUp(() {
       FirebaseTestOverrides.initialize();
@@ -71,9 +67,8 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
-            theme: ThemeData(fontFamily: "Roboto"),
-            home: const EnrichmentPage(),
+          child: const MaterialApp(
+            home: EnrichmentPage(),
           ),
         ),
       );

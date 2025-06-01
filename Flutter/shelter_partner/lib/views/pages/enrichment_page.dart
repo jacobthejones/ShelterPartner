@@ -598,13 +598,10 @@ class _EnrichmentPageState extends ConsumerState<EnrichmentPage>
                                         });
                                       }
                                     },
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          fontSize: 16,
-                                          color: Colors.black,
-                                        ),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black,
+                                    ),
                                     items: locationTierOptions
                                         .map<DropdownMenuItem<int>>(
                                             (int value) {
@@ -649,13 +646,10 @@ class _EnrichmentPageState extends ConsumerState<EnrichmentPage>
                                           selectedGroupingCategory = newValue!;
                                         });
                                       },
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            fontSize: 16,
-                                            color: Colors.black,
-                                          ),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black,
+                                      ),
                                       items: [
                                         'None',
                                         'Adoption Category',

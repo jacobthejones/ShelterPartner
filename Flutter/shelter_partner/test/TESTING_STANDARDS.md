@@ -32,7 +32,31 @@
 
 *See existing test files for full usage patterns.*
 
-## 5. Test Effectiveness Validation
+## 5. Golden Tests (Widget Screenshot Tests)
+- Golden tests compare the rendered output of widgets to reference images ("golden files") to catch visual regressions.
+- Place golden files in the `test/goldens/` directory. Name them descriptively (e.g., `enrichment_page.png`, `enrichment_page_additional_options_expanded.png`).
+- To ensure real text is rendered in goldens, call `await loadAppFonts();` in a `setUpAll` block.
+- To create or update golden files, run:
+  ```sh
+  flutter test --update-goldens path/to/your_test.dart
+  ```
+- To verify goldens, run:
+  ```sh
+  flutter test path/to/your_test.dart
+  ```
+- Always review updated golden images before committing to ensure changes are intentional.
+- For multi-state widgets (e.g., collapsed/expanded), take separate goldens for each state by interacting with the widget in the test and calling `expectLater` with a different file name.
+- Example:
+  ```dart
+  await expectLater(find.byType(MyWidget), matchesGoldenFile('goldens/my_widget_collapsed.png'));
+  // Interact with widget (e.g., tap to expand)
+  await tester.tap(find.text('Expand'));
+  await tester.pumpAndSettle();
+  await expectLater(find.byType(MyWidget), matchesGoldenFile('goldens/my_widget_expanded.png'));
+  ```
+- If you see rectangles instead of text, ensure fonts are loaded as described above. Also make sure your widgets inherit the theme's font. For example, use `Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16, color: Colors.black)` for text styles instead of creating a `TextStyle` from scratch. This ensures the font from your ThemeData is used in goldens and in the app. This is only sometimes needed, I'm not sure why. If/when we specify a single font to be used across all platforms, this should no longer be necessary.
+
+## 6. Test Effectiveness Validation
 **CRITICAL: Always verify that your tests can fail when the code they're testing is broken.**
 
 This is essential to ensure your tests are actually testing the intended behavior and will catch regressions.
@@ -56,4 +80,7 @@ After writing a test that passes, temporarily break the functionality and verify
 
 ---
 
-For more details, see the [Flutter testing documentation](https://docs.flutter.dev/testing) and [Riverpod documentation](https://riverpod.dev/).
+## Additional Resources
+- [Flutter Testing Documentation](https://docs.flutter.dev/testing)
+- [Riverpod Documentation](https://riverpod.dev/)
+- [Golden Toolkit Documentation](https://pub.dev/packages/golden_toolkit)

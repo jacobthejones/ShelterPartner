@@ -71,8 +71,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: EnrichmentPage(),
+          child: MaterialApp(
+            theme: ThemeData(fontFamily: "Roboto"),
+            home: const EnrichmentPage(),
           ),
         ),
       );

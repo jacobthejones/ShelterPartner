@@ -55,6 +55,7 @@
   await expectLater(find.byType(MyWidget), matchesGoldenFile('goldens/my_widget_expanded.png'));
   ```
 - If you see rectangles instead of text, ensure fonts are loaded as described above. Also make sure your widgets inherit the theme's font. For example, use `Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16, color: Colors.black)` for text styles instead of creating a `TextStyle` from scratch. This ensures the font from your ThemeData is used in goldens and in the app. This is only sometimes needed, I'm not sure why. If/when we specify a single font to be used across all platforms, this should no longer be necessary.
+- If the test passes locally but not in GitHub and the failure images show slight variations in the font, you may need to specify 'Roboto' as the default font for your test widget. See enrichment_page_golden_test.dart for an example.
 
 ## 6. Test Effectiveness Validation
 **CRITICAL: Always verify that your tests can fail when the code they're testing is broken.**

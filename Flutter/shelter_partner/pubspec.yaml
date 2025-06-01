@@ -75,3 +75,6 @@ flutter:
     - family: CabinRegular
       fonts:
         - asset: assets/fonts/CabinSketch-Regular.ttf
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto/static/Roboto-Regular.ttf

@@ -47,5 +47,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Golden test failures (temporary files)
+# Screenshot test failures (temporary files)
 test/golden/failures/
+integration_test/screenshots/last_run/
+
+# chromedriver
+/chromedriver

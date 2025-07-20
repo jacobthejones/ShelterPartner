@@ -1,22 +1,29 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shelter_partner/main.dart' as app;
 import 'package:shelter_partner/services/console_logger_service.dart';
-import 'package:shelter_partner/services/logger_service.dart';
 import 'package:shelter_partner/views/components/animal_card_image.dart';
 import 'package:shelter_partner/views/components/take_out_confirmation_view.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final logger = ConsoleLoggerService();
 
   group('Dog Workflow Integration Test', () {
-    testWidgets('Login and test long press on animal image', (
+    testWidgets('Create new account and test long press on animal image', (
       WidgetTester tester,
     ) async {
+      // Generate unique email with timestamp and short UUID
+      const uuid = Uuid();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final shortUuid = uuid.v4().substring(0, 8);
+      final testEmail = 'integration_test_${timestamp}_$shortUuid@example.com';
+      const testPassword = 'testpassword';
+
+      logger.info('TEST: Creating account with email: $testEmail');
+
       // Start the app
       app.main();
       await tester.pumpAndSettle();
@@ -24,19 +31,45 @@ void main() {
       // Wait for the login page to load
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Enter test credentials
+      // Navigate to signup page
+      await tester.tap(find.text('Create Shelter'));
+      await tester.pumpAndSettle();
+      logger.info('TEST: Navigated to signup page');
+
+      // Fill in signup form
+      final textFields = find.byType(TextField);
+
+      // First name field (first text field)
+      await tester.enterText(textFields.at(0), 'Integration');
+
+      // Last name field (second text field)
+      await tester.enterText(textFields.at(1), 'Test');
+
+      // Email field (third text field)
+      await tester.enterText(textFields.at(2), testEmail);
+
+      // Password field (fourth text field)
+      await tester.enterText(textFields.at(3), testPassword);
+
+      // Confirm password field (fifth text field)
+      await tester.enterText(textFields.at(4), testPassword);
+
+      // Shelter name field (sixth text field)
+      await tester.enterText(textFields.at(5), 'Test Shelter');
+
+      // Shelter address field (seventh text field)
       await tester.enterText(
-        find.byType(TextField).first,
-        'integration_test@example.com',
+        textFields.at(6),
+        '123 Test Street, Test City, TS 12345',
       );
-      await tester.enterText(find.byType(TextField).last, 'testpassword');
+
       await tester.pumpAndSettle();
 
-      // Tap the login button
-      await tester.tap(find.text('Log In'));
-      logger.info('TEST: Tapped Log In button');
+      // Tap the Create Shelter button
+      await tester.tap(find.text('Create Shelter'));
+      logger.info('TEST: Tapped Create Shelter button');
 
-      // Wait for login to process and iterate until the AnimalCardImages are found
+      // Wait for signup to process and iterate until the AnimalCardImages are found
       bool animalCardImagesFound = false;
       int attempts = 0;
       const maxAttempts = 10;
@@ -62,7 +95,6 @@ void main() {
         );
       }
 
-      // TODO take screenshot
       logger.info(
         'TEST: AnimalCardImages found, proceeding with long press test',
       );
@@ -86,7 +118,7 @@ void main() {
       // Take screenshot after action and verify TakeOutConfirmationView appears
       await binding.convertFlutterSurfaceToImage();
       await tester.pumpAndSettle();
-      final afterImage = await binding.takeScreenshot('after_long_press');
+      await binding.takeScreenshot('after_long_press');
 
       // Verify the confirmation dialog appeared
       expect(find.byType(TakeOutConfirmationView), findsOneWidget);
@@ -107,9 +139,7 @@ void main() {
 
       // Take final screenshot
       await tester.pumpAndSettle();
-      final finalImage = await binding.takeScreenshot(
-        'after_second_long_press',
-      );
+      await binding.takeScreenshot('after_second_long_press');
 
       // TODO click button to add note
 

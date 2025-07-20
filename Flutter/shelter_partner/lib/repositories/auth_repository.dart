@@ -308,6 +308,7 @@ class AuthRepository {
       // Iterate over the loaded CSV data and add each row to the batch
       for (final row in csvData) {
         final animalId = row['id'].toString();
+        final random = Random(animalId.hashCode);
 
         final data = {
           'takeOutAlert': [
@@ -316,14 +317,14 @@ class AuthRepository {
             '',
             '',
             'This is some sort of example alert',
-          ].randomElement(),
+          ].randomElement(random),
           'putBackAlert': [
             '',
             '',
             '',
             '',
             'This is some sort of example alert',
-          ].randomElement(),
+          ].randomElement(random),
 
           'species': collectionName == 'dogs'
               ? 'dog'
@@ -337,36 +338,36 @@ class AuthRepository {
             'yellow',
             'orange',
             'purple',
-          ].randomElement(),
+          ].randomElement(random),
           'symbol': 'pets', // Example static value, adjust as needed
-          'volunteerCategory': ['Red', 'Green', 'Blue'].randomElement(),
+          'volunteerCategory': ['Red', 'Green', 'Blue'].randomElement(random),
           'locationCategory': [
             'Building 1',
             'Building 2',
             'Building 3',
-          ].randomElement(),
+          ].randomElement(random),
           'behaviorCategory': [
             'Behavior 1',
             'Behavior 2',
             'Behavior 3',
             'Behavior 4',
-          ].randomElement(),
+          ].randomElement(random),
           'medicalCategory': [
             'Medical 1',
             'Medical 2',
             'Medical 3',
-          ].randomElement(),
+          ].randomElement(random),
           'adoptionCategory': [
             'Adoption 1',
             'Adoption 2',
             'Adoption 3',
-          ].randomElement(),
+          ].randomElement(random),
           'id': animalId,
           'inKennel': true,
           'isActive': true,
           'location': row['location'] ?? '',
           'fullLocation':
-              '${row['location'] ?? 'Site 1'} > Building ${Random().nextInt(3) + 1} > Room ${['A', 'B', 'C'].randomElement()} > Kennel ${Random().nextInt(20) + 1}',
+              '${row['location'] ?? 'Site 1'} > Building ${random.nextInt(3) + 1} > Room ${['A', 'B', 'C'].randomElement(random)} > Kennel ${random.nextInt(20) + 1}',
           'name':
               row['name'] ??
               'Unknown', // Default to 'Unknown' if name is missing
@@ -446,16 +447,16 @@ class AuthRepository {
               'timestamp': Timestamp.now(),
             },
           ], // Example placeholder for tags
-          'sex': ['m', 'f'].randomElement(),
-          'monthsOld': [2, 6, 12, 24, 36].randomElement(),
-          'breed': ['some breed', 'another breed'].randomElement(),
+          'sex': ['m', 'f'].randomElement(random),
+          'monthsOld': [2, 6, 12, 24, 36].randomElement(random),
+          'breed': ['some breed', 'another breed'].randomElement(random),
           'description': [
             'This animal is very friendly and loves to play with toys. He enjoys long walks and is very good with children. He has a calm temperament and is very affectionate.',
             'This animal is energetic and loves to run around. She is very playful and enjoys playing fetch. She is very loyal and protective of her family.',
             'This animal is very independent and likes to explore his surroundings. He is curious and intelligent, and enjoys solving puzzles and playing with interactive toys.',
             'This animal is very gentle and loves to cuddle. She is very affectionate and enjoys being around people. She has a calm demeanor and is very good with other animals.',
             'This animal is very playful and loves to be the center of attention. He enjoys playing with other animals and is very social. He has a lot of energy and loves to run and play.',
-          ].randomElement(),
+          ].randomElement(random),
         };
 
         // Add the document to the batch
@@ -500,7 +501,9 @@ class AuthRepository {
 
       final List<Map<String, dynamic>> csvData = [];
       for (int i = 1; i < csvRows.length; i++) {
-        _logger.debug('Processing row $i: ${csvRows[i]}');
+        if (i == 1) {
+          _logger.debug('First data row: ${csvRows[i]}');
+        }
         final Map<String, dynamic> rowMap = {};
         for (int j = 0; j < headers.length; j++) {
           rowMap[headers[j]] = csvRows[i][j];
@@ -518,8 +521,7 @@ class AuthRepository {
 }
 
 extension RandomElement<T> on List<T> {
-  T randomElement() {
-    final random = Random();
+  T randomElement(Random random) {
     return this[random.nextInt(length)];
   }
 }

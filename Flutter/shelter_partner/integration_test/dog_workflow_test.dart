@@ -4,7 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:shelter_partner/main.dart' as app;
 import 'package:shelter_partner/services/console_logger_service.dart';
 import 'package:shelter_partner/views/components/animal_card_image.dart';
-import 'package:shelter_partner/views/components/take_out_confirmation_view.dart';
+import 'package:shelter_partner/views/components/put_back_confirmation_view.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
@@ -100,7 +100,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       logger.info("TEST: taking screenshot");
-      await binding.takeScreenshot('before_long_press');
+      await binding.takeScreenshot('before_taking_out_animal');
       logger.info("TEST: beforeImage captured");
 
       // Long press on the first AnimalCardImage
@@ -115,33 +115,31 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
       logger.info('TEST: Completed long press on animal image');
 
-      // Take screenshot after action and verify TakeOutConfirmationView appears
-      await binding.convertFlutterSurfaceToImage();
-      await tester.pumpAndSettle();
-      await binding.takeScreenshot('after_long_press');
+      // Take screenshot after action and animal is taken out
+      await tester.pumpAndSettle(const Duration(milliseconds: 100));
+      await binding.takeScreenshot('after_taking_out_animal');
 
-      // Verify the confirmation dialog appeared
-      expect(find.byType(TakeOutConfirmationView), findsOneWidget);
-      logger.info('TEST: ✅ TakeOutConfirmationView displayed');
-
-      // Long press on the first AnimalCardImage again to put animal back
+      // Put the animal back with another long press
       logger.info(
         'TEST: Attempting long press on first AnimalCardImage again...',
       );
-      gesture.down(tester.getCenter(firstAnimalCardImage));
+      final gesture2 = await tester.startGesture(
+        tester.getCenter(firstAnimalCardImage),
+      );
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
-      await gesture.up();
+      await gesture2.up();
       await tester.pumpAndSettle(const Duration(milliseconds: 100));
-      logger.info('TEST: Completed long press on animal image');
+      logger.info('TEST: Completed long press to put animal back');
+      await binding.takeScreenshot('after_putting_back_animal');
 
-      // Verify confirmation dialog is dismissed
-      expect(find.byType(TakeOutConfirmationView), findsNothing);
+      // Verify the confirmation dialog appeared
+      expect(find.byType(PutBackConfirmationView), findsOneWidget);
+      logger.info('TEST: ✅ PutBackConfirmationView displayed');
 
-      // Take final screenshot
+      // Wait for the confirm button to be enabled
       await tester.pumpAndSettle();
-      await binding.takeScreenshot('after_second_long_press');
-
       // TODO click button to add note
+      // TODO ensure consistent sort order of example animals, I believe they're added quickly enough that sorting by last let out is inconsistent
 
       logger.info('TEST: ✅ Integration test completed');
       return;

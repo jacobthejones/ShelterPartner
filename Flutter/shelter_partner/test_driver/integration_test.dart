@@ -19,19 +19,19 @@ Future<void> main() async {
               ? canonicalFile.readAsBytesSync()
               : null;
           if (canonicalBytes == null) {
-            print('No canonical image found for $name. ');
+            // print('No canonical image found for $name. ');
             return true; // No canonical image to compare against
           }
           if (canonicalBytes.length != image.length ||
               !const ListEquality().equals(canonicalBytes, image)) {
-            print(
-              'Screenshot $name does not match the canonical image. '
-              'Please update the canonical image if this is expected.',
-            );
+            // print(
+            //   'Screenshot $name does not match the canonical image. '
+            //   'Please update the canonical image if this is expected.',
+            // );
             return true; // Screenshot does not match canonical
           }
 
-          print('Screenshot $name matches the canonical image.');
+          // print('Screenshot $name matches the canonical image.');
           return true;
         },
   );

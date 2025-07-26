@@ -6,6 +6,7 @@ import 'package:shelter_partner/providers/firebase_providers.dart';
 import 'package:shelter_partner/view_models/account_settings_view_model.dart';
 import 'package:shelter_partner/view_models/visitors_view_model.dart';
 import 'package:shelter_partner/views/components/chat_interface.dart';
+import 'package:shelter_partner/views/components/survey_banner_view.dart';
 import 'dart:async';
 import 'dart:core';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -139,6 +140,8 @@ class VisitorPageState extends ConsumerState<VisitorPage>
         body: SafeArea(
           child: Column(
             children: [
+              // Survey banner
+              const SurveyBannerView(),
               if (tabs.length > 1)
                 TabBar(controller: _tabController, tabs: tabs),
               Expanded(

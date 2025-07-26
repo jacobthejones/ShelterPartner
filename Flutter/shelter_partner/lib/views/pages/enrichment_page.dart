@@ -18,6 +18,7 @@ import 'package:shelter_partner/views/components/animal_card_view.dart';
 import 'package:shelter_partner/views/components/navigation_button_view.dart';
 import 'package:shelter_partner/views/components/put_back_confirmation_view.dart';
 import 'package:shelter_partner/views/components/simplistic_animal_card_view.dart';
+import 'package:shelter_partner/views/components/survey_banner_view.dart';
 import 'package:shelter_partner/views/components/switch_toggle_view.dart';
 import 'package:shelter_partner/views/components/take_out_confirmation_view.dart';
 import 'package:shelter_partner/views/pages/main_page.dart';
@@ -511,6 +512,8 @@ class EnrichmentPageState extends ConsumerState<EnrichmentPage>
           },
           child: Column(
             children: [
+              // Survey banner
+              const SurveyBannerView(),
               // Collapsible section for search bar, attribute dropdown, and "Take Out All Animals" button
               ExpansionTile(
                 title: const Text('Additional Options'),

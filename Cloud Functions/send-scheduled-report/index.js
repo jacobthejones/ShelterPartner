@@ -64,6 +64,23 @@ exports.scheduledReport = async (req, res) => {
             return;
         }
 
+        // Fetch the shelter document from Firestore to confirm and fetch the shelterId
+        let fetchedShelterId;
+        try {
+            const shelterDoc = await db.collection('shelters').doc(shelterId).get();
+            if (!shelterDoc.exists) {
+                console.error('Shelter not found:', shelterId);
+                res.status(404).send('Shelter not found');
+                return;
+            }
+            // Prefer the document id, but if you store it as a field, you could use: shelterDoc.data().shelterId
+            fetchedShelterId = shelterDoc.id;
+        } catch (err) {
+            console.error('Error fetching shelter from Firestore:', err);
+            res.status(500).send('Error fetching shelter');
+            return;
+        }
+
         // Define Chicago timezone
         const chicagoTz = 'America/Chicago';
         console.log(`Timezone set to ${chicagoTz}.`);
@@ -209,7 +226,7 @@ exports.scheduledReport = async (req, res) => {
 
             // Process logs (with empty animal-level fields), excluding Shelter Partner authored content
             animal.logs
-                .filter(log => log.author !== 'Shelter Partner')
+                .filter(log => log.author.replace(/\s+/g,'').toLowerCase() !== 'shelterpartner')
                 .forEach(log => {
                     const start = moment(log.startTime.toDate());
                     const end = moment(log.endTime.toDate());
@@ -259,9 +276,7 @@ exports.scheduledReport = async (req, res) => {
                     photo => !photo.url.includes('amazonaws') && !photo.url.includes('shelterluv') && photo.author !== 'Shelter Partner'
                 );
                 // Remove Shelter Partner authored logs
-                const validLogs = (animal.logs || []).filter(
-                    log => log.author !== 'Shelter Partner'
-                );
+                const validLogs = (animal.logs || []).filter(log => log.author.replace(/\s+/g,'').toLowerCase() !== 'shelterpartner')
                 return {
                     ...animal,
                     notes: validNotes,
@@ -284,9 +299,8 @@ exports.scheduledReport = async (req, res) => {
                     photo => !photo.url.includes('amazonaws') && photo.author !== 'Shelter Partner'
                 );
                 // Remove Shelter Partner authored logs
-                const validLogs = (animal.logs || []).filter(
-                    log => log.author !== 'Shelter Partner'
-                );
+                const validLogs = (animal.logs || []).filter(log => log.author.replace(/\s+/g,'').toLowerCase() !== 'shelterpartner')
+
                 return {
                     ...animal,
                     notes: validNotes,
@@ -297,9 +311,19 @@ exports.scheduledReport = async (req, res) => {
             // Keep only animals that have at least 1 valid note, photo, or log
             .filter(animal => animal.notes.length > 0 || animal.photos.length > 0 || animal.logs.length > 0);
 
-        // 2. Generate HTML
-        let htmlContent = '<h1>Animal Activity Report</h1>';
-        htmlContent += '<p>See attachment for a more detailed report</p>';
+        // 2. Generate HTML (with dynamic shelter id)
+        let htmlContent = `
+            <div style="color: red; font-weight: bold; margin-bottom: 16px;">
+                Scheduled reports will be phased out in September in favor of 3rd party solutions using the API that will give you continuous access to all of your data. 
+                Here is an <a href="https://docs.google.com/spreadsheets/d/1rUnL2_6rGWtjU-0BjqajVkrI6F9_K3gVx_RYUHN1qkg/edit?usp=sharing" target="_blank" style="color: inherit; text-decoration: underline;">example template using Google Sheets</a>. 
+                If you want to use the google sheet as is, go to "File"&rarr;"Make A Copy". When you run it for the first time, you'll need to sign in with your google account. 
+                And then it may show a warning but you can bypass this by clicking "Advanced" and then "Go to API Fetch (unsafe)". 
+                This is just because I haven't published the script to the play store or anything. If you want to change anything, you would just go to "Extensions"&rarr;"Apps Script" and edit the code there and save it.
+                Your Shelter ID is: <span style="color: inherit; background: #fff; border-radius: 3px; padding: 0 4px; font-family: monospace;">${fetchedShelterId}</span> and you can generate an API in the app.
+            </div>
+            <h1>Animal Activity Report</h1>
+            <p>See attachment for a more detailed report</p>
+        `;
 
         // Process Cats for HTML content
         if (catsData.length > 0) {
@@ -470,7 +494,7 @@ async function sendEmailWithAttachment(toEmail, filePath, startDate, endDate, ht
     console.log('Preparing to send email with attachment.');
 
     const emailUser = process.env.EMAILADDRESS;
-    const emailPassword = process.env.EMAILPASSWORD;
+    const emailPassword = process.env.EMAILADDRESS;
 
     console.log('Email credentials retrieved from environment variables.');
 

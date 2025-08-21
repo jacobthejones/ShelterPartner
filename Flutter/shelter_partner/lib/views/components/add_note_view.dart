@@ -64,76 +64,86 @@ class AddNoteViewState extends ConsumerState<AddNoteView> {
 
     return AlertDialog(
       title: Text(widget.animal.name),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _noteController,
-            maxLines: 5,
-            decoration: const InputDecoration(
-              hintText: 'Enter your notes here...',
-              border: OutlineInputBorder(),
-            ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
           ),
-          const SizedBox(height: 16),
-          if (_selectedImage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: FutureBuilder<Uint8List>(
-                future: _selectedImage!.readAsBytes(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasData) {
-                      return Image.memory(
-                        snapshot.data!,
-                        height: 100,
-                        width: 100,
-                        fit: BoxFit.cover,
-                      );
-                    } else {
-                      return const Text('Failed to load image');
-                    }
-                  } else {
-                    return const CircularProgressIndicator();
-                  }
-                },
-              ),
-            ),
-          Consumer(
-            builder: (context, watch, child) {
-              final tags = widget.animal.species == 'dog'
-                  ? shelterSettings.value?.shelterSettings.dogTags
-                  : shelterSettings.value?.shelterSettings.catTags;
-              if (tags == null || tags.isEmpty) {
-                return Container(); // Empty container if no tags
-              }
-              return Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0, // Add vertical spacing
-                children: tags.map((tag) {
-                  return FilterChip(
-                    label: Text(tag),
-                    selected: _selectedTags.contains(tag),
-                    onSelected: (isSelected) {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedTags.add(tag);
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _noteController,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your notes here...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_selectedImage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: FutureBuilder<Uint8List>(
+                      future: _selectedImage!.readAsBytes(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          if (snapshot.hasData) {
+                            return Image.memory(
+                              snapshot.data!,
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                            );
+                          } else {
+                            return const Text('Failed to load image');
+                          }
                         } else {
-                          _selectedTags.remove(tag);
+                          return const CircularProgressIndicator();
                         }
-                      });
-                    },
-                  );
-                }).toList(),
-              );
-            },
+                      },
+                    ),
+                  ),
+                Consumer(
+                  builder: (context, watch, child) {
+                    final tags = widget.animal.species == 'dog'
+                        ? shelterSettings.value?.shelterSettings.dogTags
+                        : shelterSettings.value?.shelterSettings.catTags;
+                    if (tags == null || tags.isEmpty) {
+                      return Container(); // Empty container if no tags
+                    }
+                    return Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0, // Add vertical spacing
+                      children: tags.map((tag) {
+                        return FilterChip(
+                          label: Text(tag),
+                          selected: _selectedTags.contains(tag),
+                          onSelected: (isSelected) {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedTags.add(tag);
+                              } else {
+                                _selectedTags.remove(tag);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _pickImage,
+                  child: const Text('Add Photo from Gallery'),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _pickImage,
-            child: const Text('Add Photo from Gallery'),
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(

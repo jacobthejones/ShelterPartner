@@ -91,6 +91,16 @@ class TagsWidget extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                                if (tag.authors.isNotEmpty) ...[
+                                  const SizedBox(height: 4.0),
+                                  Text(
+                                    'Authors: ${tag.authors.map((author) => author['author']).join(', ')}',
+                                    style: const TextStyle(
+                                      fontSize: 12.0,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),

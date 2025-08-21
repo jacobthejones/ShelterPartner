@@ -6,6 +6,9 @@ import 'package:shelter_partner/models/animal.dart';
 import 'package:shelter_partner/models/note.dart';
 import 'package:shelter_partner/repositories/add_note_repository.dart';
 import 'package:shelter_partner/view_models/shelter_details_view_model.dart';
+import 'package:shelter_partner/view_models/auth_view_model.dart';
+import 'package:shelter_partner/view_models/account_settings_view_model.dart';
+import 'package:shelter_partner/view_models/shelter_settings_view_model.dart';
 
 import 'package:shelter_partner/services/logger_service.dart';
 import 'package:shelter_partner/providers/firebase_providers.dart';
@@ -21,11 +24,23 @@ class AddNoteViewModel extends StateNotifier<Animal> {
 
   Future<void> updateAnimalTags(Animal animal, List<String> tags) async {
     try {
+      // Get user details
+      final userDetails = ref.read(appUserProvider);
+
+      // Check if name is required based on user type
+      final accountSettings = ref.read(accountSettingsViewModelProvider);
+      final shelterSettings = ref.read(shelterSettingsViewModelProvider);
+      final bool requireName = userDetails?.type == "admin"
+          ? (accountSettings.value?.accountSettings?.requireName ?? false)
+          : (shelterSettings.value?.volunteerSettings.requireName ?? false);
+
       for (var tag in tags) {
         await _repository.updateAnimalTags(
           animal,
           ref.read(shelterDetailsViewModelProvider).value!.id,
           tag,
+          authorName: requireName ? userDetails?.firstName : null,
+          authorID: requireName ? userDetails?.id : null,
         );
       }
 

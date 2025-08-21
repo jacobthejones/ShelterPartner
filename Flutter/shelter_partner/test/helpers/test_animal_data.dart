@@ -3,8 +3,13 @@ import 'package:shelter_partner/models/tag.dart';
 import 'package:shelter_partner/models/animal.dart';
 import 'package:shelter_partner/models/log.dart';
 
-Tag testTag({String id = 'tag1', String title = 'Friendly'}) =>
-    Tag(id: id, title: title, count: 1, timestamp: Timestamp.now());
+Tag testTag({String id = 'tag1', String title = 'Friendly'}) => Tag(
+  id: id,
+  title: title,
+  count: 1,
+  timestamp: Timestamp.now(),
+  authors: [],
+);
 
 Animal createTestAnimal({
   required String id,

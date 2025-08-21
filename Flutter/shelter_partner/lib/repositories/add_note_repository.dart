@@ -28,8 +28,10 @@ class AddNoteRepository {
   Future<void> updateAnimalTags(
     Animal animal,
     String shelterID,
-    String tagName,
-  ) async {
+    String tagName, {
+    String? authorName,
+    String? authorID,
+  }) async {
     final collection = animal.species.toLowerCase() == 'cat' ? 'cats' : 'dogs';
     final docRef = _firestore
         .collection('shelters/$shelterID/$collection')
@@ -48,18 +50,39 @@ class AddNoteRepository {
       for (var tag in tags) {
         if (tag['title'] == tagName) {
           tag['count'] = (tag['count'] ?? 0) + 1;
+
+          // Add author if provided and not already in the list
+          if (authorName != null && authorID != null) {
+            final authors = List<Map<String, dynamic>>.from(
+              tag['authors'] ?? [],
+            );
+            final authorExists = authors.any(
+              (author) => author['authorID'] == authorID,
+            );
+            if (!authorExists) {
+              authors.add({'author': authorName, 'authorID': authorID});
+              tag['authors'] = authors;
+            }
+          }
+
           tagExists = true;
           break;
         }
       }
 
       if (!tagExists) {
-        tags.add({
+        final newTag = {
           'title': tagName,
           'count': 1,
           'timestamp': Timestamp.now(),
           'id': const Uuid().v4().toString(),
-        });
+          'authors': authorName != null && authorID != null
+              ? [
+                  {'author': authorName, 'authorID': authorID},
+                ]
+              : <Map<String, dynamic>>[],
+        };
+        tags.add(newTag);
       }
 
       transaction.update(docRef, {'tags': tags});

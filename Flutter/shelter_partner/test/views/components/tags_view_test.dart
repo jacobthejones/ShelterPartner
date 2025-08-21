@@ -216,5 +216,69 @@ void main() {
       expect(find.text('Tags'), findsOneWidget);
       expect(find.text('No tags available'), findsOneWidget);
     });
+
+    testWidgets('displays author information when tags have authors', (
+      WidgetTester tester,
+    ) async {
+      // Arrange
+      final tagWithAuthors = Tag(
+        id: 'tag1',
+        title: 'Friendly',
+        count: 2,
+        timestamp: Timestamp.now(),
+        authors: [
+          {'author': 'John Doe', 'authorID': 'user1'},
+          {'author': 'Jane Smith', 'authorID': 'user2'},
+        ],
+      );
+
+      // Act
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TagsWidget(
+              tags: [tagWithAuthors],
+              isAdmin: false,
+              onDelete: (tagId) {},
+            ),
+          ),
+        ),
+      );
+
+      // Assert
+      expect(find.text('Friendly'), findsOneWidget);
+      expect(find.text('Authors: John Doe, Jane Smith'), findsOneWidget);
+    });
+
+    testWidgets(
+      'does not display author information when tags have no authors',
+      (WidgetTester tester) async {
+        // Arrange
+        final tagWithoutAuthors = Tag(
+          id: 'tag1',
+          title: 'Playful',
+          count: 1,
+          timestamp: Timestamp.now(),
+          authors: [],
+        );
+
+        // Act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: TagsWidget(
+                tags: [tagWithoutAuthors],
+                isAdmin: false,
+                onDelete: (tagId) {},
+              ),
+            ),
+          ),
+        );
+
+        // Assert
+        expect(find.text('Playful'), findsOneWidget);
+        expect(find.textContaining('Authors:'), findsNothing);
+      },
+    );
   });
 }

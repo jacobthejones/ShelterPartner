@@ -1,7 +1,5 @@
 # Welcome To [Shelter Partner](https://shelterpartner.org)!
 
-Jared will be out of town July 26 through mid August and will respond to any messages when he gets back.
-
 ## How To Contribute On GitHub
 1. Create an issue in the Some-Apps/ShelterPartner repository or select an existing issue.
 2. Comment on the issue "I'd like to work on this"

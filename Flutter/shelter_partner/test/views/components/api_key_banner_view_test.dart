@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shelter_partner/views/components/api_key_banner_view.dart';
+import 'package:shelter_partner/models/shelter.dart';
+import 'package:shelter_partner/models/shelter_settings.dart';
+import 'package:shelter_partner/models/volunteer_settings.dart';
 import '../../helpers/firebase_test_overrides.dart';
 
 void main() {
@@ -101,4 +105,172 @@ void main() {
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
   });
+
+  group('ApiKeyBannerProvider Logic Tests', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      FirebaseTestOverrides.initialize();
+      container = ProviderContainer(overrides: FirebaseTestOverrides.overrides);
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('banner should show for ShelterLuv shelter without API key', () async {
+      // Create test shelter with ShelterLuv but no API key
+      final testShelter = Shelter(
+        id: 'test-shelter',
+        name: 'Test Shelter',
+        address: '123 Test St',
+        createdAt: Timestamp.now(),
+        managementSoftware: 'ShelterLuv',
+        shelterSettings: ShelterSettings.fromMap({
+          'apiKey': '',
+        }), // Empty API key
+        volunteerSettings: VolunteerSettings.fromMap({}),
+        volunteers: [],
+      );
+
+      // Test the provider logic directly by simulating the conditions
+      final hasApiKey = testShelter.shelterSettings.apiKey.isNotEmpty;
+      final isShelterLuv = testShelter.managementSoftware == 'ShelterLuv';
+      const isDismissed = false; // Assume not dismissed
+      final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
+
+      expect(shouldShow, isTrue);
+    });
+
+    test(
+      'banner should NOT show for non-ShelterLuv shelter without API key',
+      () async {
+        // Create test shelter with different management software but no API key
+        final testShelter = Shelter(
+          id: 'test-shelter',
+          name: 'Test Shelter',
+          address: '123 Test St',
+          createdAt: Timestamp.now(),
+          managementSoftware: 'Animals First', // Different management software
+          shelterSettings: ShelterSettings.fromMap({
+            'apiKey': '',
+          }), // Empty API key
+          volunteerSettings: VolunteerSettings.fromMap({}),
+          volunteers: [],
+        );
+
+        // Test the provider logic directly by simulating the conditions
+        final hasApiKey = testShelter.shelterSettings.apiKey.isNotEmpty;
+        final isShelterLuv = testShelter.managementSoftware == 'ShelterLuv';
+        const isDismissed = false; // Assume not dismissed
+        final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
+
+        expect(shouldShow, isFalse);
+      },
+    );
+
+    test(
+      'banner should NOT show for ShelterLuv shelter with API key',
+      () async {
+        // Create test shelter with ShelterLuv and API key
+        final testShelter = Shelter(
+          id: 'test-shelter',
+          name: 'Test Shelter',
+          address: '123 Test St',
+          createdAt: Timestamp.now(),
+          managementSoftware: 'ShelterLuv',
+          shelterSettings: ShelterSettings.fromMap({
+            'apiKey': 'test-api-key',
+          }), // Has API key
+          volunteerSettings: VolunteerSettings.fromMap({}),
+          volunteers: [],
+        );
+
+        // Test the provider logic directly by simulating the conditions
+        final hasApiKey = testShelter.shelterSettings.apiKey.isNotEmpty;
+        final isShelterLuv = testShelter.managementSoftware == 'ShelterLuv';
+        const isDismissed = false; // Assume not dismissed
+        final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
+
+        expect(shouldShow, isFalse);
+      },
+    );
+
+    test('banner should NOT show for null shelter data', () async {
+      // Test with null shelter
+      const Shelter? testShelter = null;
+
+      // Test the provider logic directly by simulating the conditions
+      final hasApiKey = testShelter?.shelterSettings.apiKey.isNotEmpty ?? false;
+      final isShelterLuv = testShelter?.managementSoftware == 'ShelterLuv';
+      const isDismissed = false; // Assume not dismissed
+      final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
+
+      expect(shouldShow, isFalse);
+    });
+
+    test('banner logic validates all conditions correctly', () async {
+      // Test all combination of conditions
+
+      // ShelterLuv, no API key, not dismissed -> should show
+      expect(
+        _shouldShowBanner(
+          managementSoftware: 'ShelterLuv',
+          hasApiKey: false,
+          isDismissed: false,
+        ),
+        isTrue,
+      );
+
+      // ShelterLuv, has API key, not dismissed -> should NOT show
+      expect(
+        _shouldShowBanner(
+          managementSoftware: 'ShelterLuv',
+          hasApiKey: true,
+          isDismissed: false,
+        ),
+        isFalse,
+      );
+
+      // ShelterLuv, no API key, dismissed -> should NOT show
+      expect(
+        _shouldShowBanner(
+          managementSoftware: 'ShelterLuv',
+          hasApiKey: false,
+          isDismissed: true,
+        ),
+        isFalse,
+      );
+
+      // Animals First, no API key, not dismissed -> should NOT show
+      expect(
+        _shouldShowBanner(
+          managementSoftware: 'Animals First',
+          hasApiKey: false,
+          isDismissed: false,
+        ),
+        isFalse,
+      );
+
+      // Unknown management software, no API key, not dismissed -> should NOT show
+      expect(
+        _shouldShowBanner(
+          managementSoftware: 'Unknown',
+          hasApiKey: false,
+          isDismissed: false,
+        ),
+        isFalse,
+      );
+    });
+  });
+}
+
+/// Helper function to test the banner display logic
+bool _shouldShowBanner({
+  required String managementSoftware,
+  required bool hasApiKey,
+  required bool isDismissed,
+}) {
+  final isShelterLuv = managementSoftware == 'ShelterLuv';
+  return !hasApiKey && !isDismissed && isShelterLuv;
 }

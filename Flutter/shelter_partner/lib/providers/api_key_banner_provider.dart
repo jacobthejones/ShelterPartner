@@ -38,7 +38,8 @@ class ApiKeyBannerNotifier extends StateNotifier<ApiKeyBannerState> {
       next.whenOrNull(
         data: (shelter) {
           final hasApiKey = shelter?.shelterSettings.apiKey.isNotEmpty ?? false;
-          final shouldShow = !hasApiKey && !isDismissed;
+          final isShelterLuv = shelter?.managementSoftware == 'ShelterLuv';
+          final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
 
           state = state.copyWith(
             shouldShow: shouldShow,
@@ -53,7 +54,8 @@ class ApiKeyBannerNotifier extends StateNotifier<ApiKeyBannerState> {
     shelterAsyncValue.whenOrNull(
       data: (shelter) {
         final hasApiKey = shelter?.shelterSettings.apiKey.isNotEmpty ?? false;
-        final shouldShow = !hasApiKey && !isDismissed;
+        final isShelterLuv = shelter?.managementSoftware == 'ShelterLuv';
+        final shouldShow = !hasApiKey && !isDismissed && isShelterLuv;
 
         state = state.copyWith(
           shouldShow: shouldShow,

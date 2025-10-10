@@ -3,6 +3,7 @@ import 'package:shelter_partner/models/animal.dart';
 import 'package:shelter_partner/models/log.dart';
 import 'package:shelter_partner/repositories/put_back_confirmation_repository.dart';
 import 'package:shelter_partner/view_models/shelter_details_view_model.dart';
+import 'package:shelter_partner/view_models/enrichment_view_model.dart';
 import 'package:shelter_partner/providers/firebase_providers.dart';
 
 class PutBackConfirmationViewModel extends StateNotifier<Animal> {
@@ -17,9 +18,20 @@ class PutBackConfirmationViewModel extends StateNotifier<Animal> {
     logger.debug("Putting back animal with log: ${log.toMap()}");
     // Get shelter ID from shelterDetailsViewModelProvider
     final shelterDetailsAsync = ref.read(shelterDetailsViewModelProvider);
-    // final enrichmentViewModel = ref.read(enrichmentViewModelProvider.notifier);
+    final enrichmentViewModel = ref.read(enrichmentViewModelProvider.notifier);
 
-    // enrichmentViewModel.updateAnimalOptimistically(animal.copyWith(inKennel: true));
+    // Optimistically update UI: set inKennel true and close the last log
+    final updatedLogs = List<Log>.from(animal.logs);
+    if (updatedLogs.isNotEmpty) {
+      final last = updatedLogs.last;
+      updatedLogs[updatedLogs.length - 1] = last.copyWith(
+        endTime: log.endTime,
+        earlyReason: log.earlyReason,
+      );
+    }
+    enrichmentViewModel.updateAnimalOptimistically(
+      animal.copyWith(inKennel: true, logs: updatedLogs),
+    );
     try {
       await _repository.putBackAnimal(
         animal,
@@ -40,6 +52,24 @@ class PutBackConfirmationViewModel extends StateNotifier<Animal> {
 
     // Get shelter ID from shelterDetailsViewModelProvider
     final shelterDetailsAsync = ref.read(shelterDetailsViewModelProvider);
+    final enrichmentViewModel = ref.read(enrichmentViewModelProvider.notifier);
+
+    // Optimistically update all animals in the UI
+    for (int i = 0; i < animals.length; i++) {
+      final animal = animals[i];
+      final log = logs[i];
+      final updatedLogs = List<Log>.from(animal.logs);
+      if (updatedLogs.isNotEmpty) {
+        final last = updatedLogs.last;
+        updatedLogs[updatedLogs.length - 1] = last.copyWith(
+          endTime: log.endTime,
+          earlyReason: log.earlyReason,
+        );
+      }
+      enrichmentViewModel.updateAnimalOptimistically(
+        animal.copyWith(inKennel: true, logs: updatedLogs),
+      );
+    }
 
     try {
       await _repository.bulkPutBackAnimals(
@@ -58,6 +88,16 @@ class PutBackConfirmationViewModel extends StateNotifier<Animal> {
   Future<void> deleteLastLog(Animal animal) async {
     // Get shelter ID from shelterDetailsViewModelProvider
     final shelterDetailsAsync = ref.read(shelterDetailsViewModelProvider);
+    final enrichmentViewModel = ref.read(enrichmentViewModelProvider.notifier);
+
+    // Optimistically update UI: remove the last log and set inKennel true
+    final updatedLogs = List<Log>.from(animal.logs);
+    if (updatedLogs.isNotEmpty) {
+      updatedLogs.removeLast();
+    }
+    enrichmentViewModel.updateAnimalOptimistically(
+      animal.copyWith(inKennel: true, logs: updatedLogs),
+    );
 
     try {
       await _repository.deleteLastLog(animal, shelterDetailsAsync.value!.id);
@@ -75,6 +115,18 @@ class PutBackConfirmationViewModel extends StateNotifier<Animal> {
 
     // Get shelter ID from shelterDetailsViewModelProvider
     final shelterDetailsAsync = ref.read(shelterDetailsViewModelProvider);
+    final enrichmentViewModel = ref.read(enrichmentViewModelProvider.notifier);
+
+    // Optimistically update all animals in the UI
+    for (final animal in animals) {
+      final updatedLogs = List<Log>.from(animal.logs);
+      if (updatedLogs.isNotEmpty) {
+        updatedLogs.removeLast();
+      }
+      enrichmentViewModel.updateAnimalOptimistically(
+        animal.copyWith(inKennel: true, logs: updatedLogs),
+      );
+    }
 
     try {
       await _repository.bulkDeleteLastLogs(

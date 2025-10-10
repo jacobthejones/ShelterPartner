@@ -17,10 +17,8 @@ import 'package:shelter_partner/view_models/shelter_settings_view_model.dart';
 import 'package:shelter_partner/views/components/animal_card_view.dart';
 import 'package:shelter_partner/views/components/navigation_button_view.dart';
 import 'package:shelter_partner/views/components/put_back_confirmation_view.dart';
-import 'package:shelter_partner/views/components/simplistic_animal_card_view.dart';
 import 'package:shelter_partner/views/components/survey_banner_view.dart';
 import 'package:shelter_partner/views/components/api_key_banner_view.dart';
-import 'package:shelter_partner/views/components/switch_toggle_view.dart';
 import 'package:shelter_partner/views/components/take_out_confirmation_view.dart';
 import 'package:shelter_partner/views/pages/main_page.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -35,23 +33,39 @@ class EnrichmentPage extends ConsumerStatefulWidget {
 
 class EnrichmentPageState extends ConsumerState<EnrichmentPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  String selectedGroupingCategory = 'None';
+  // Fixed card layout config
+  // Target card width used to size children; spacing expands/contracts per row.
+  static const double _cardWidth = 265.0;
+  // Ungrouped (paged) grid: cards typically show more vertical content
+  // (image + multiple lines), so use a taller shape (smaller width/height).
+  static const double _ungroupedAspectRatio = 0.72; // width / height
+  // Grouped sections: cards are slightly shorter to fit section headers and
+  // inter-section spacing comfortably on screen.
+  static const double _groupedAspectRatio = 0.72; // width / height
 
-  // State variables for search and attribute selection
-  final TextEditingController _searchController = TextEditingController();
+  // Paging controllers
+  final PagingController<int, dynamic> _dogsPagingController = PagingController(
+    firstPageKey: 0,
+  );
+  final PagingController<int, dynamic> _catsPagingController = PagingController(
+    firstPageKey: 0,
+  );
+  static const int _pageSize = 500;
+
+  // UI/state
+  late final TabController _tabController;
+  late final TextEditingController _searchController = TextEditingController();
+  late ScrollController _scrollController;
   String searchQuery = '';
-  int selectedLocationTierCount = 4; // Default to 2 location tiers
-  final List<int> locationTierOptions = [1, 2, 3, 4];
-
-  // For attribute dropdown
-  String selectedAttributeDisplayName = 'Name'; // Default display name
-  String selectedAttribute = 'name'; // Corresponding attribute key
-  Map<String, String> attributeDisplayNames = {
+  String selectedGroupingCategory = 'None';
+  int selectedLocationTierCount = 2;
+  String selectedAttribute = 'name';
+  String selectedAttributeDisplayName = 'Name';
+  final Map<String, String> attributeDisplayNames = const {
     'Name': 'name',
+    'Sex': 'sex',
     'Notes': 'notes',
     'Tags': 'tags',
-    'Sex': 'sex',
     'Breed': 'breed',
     'Location': 'location',
     'Description': 'description',
@@ -59,24 +73,13 @@ class EnrichmentPageState extends ConsumerState<EnrichmentPage>
     'Put Back Alert': 'putBackAlert',
     'Adoption Category': 'adoptionCategory',
     'Behavior Category': 'behaviorCategory',
-    'Location Category': 'locationCategory',
+    // 'Location Category': 'locationCategory',
     'Medical Category': 'medicalCategory',
     'Volunteer Category': 'volunteerCategory',
     'Let Out Type': 'letOutType',
-    'Early Put Back Reasons': 'earlyPutBackReason',
+    'Early Put Back Reason': 'earlyPutBackReason',
   };
-
-  // PagingControllers for infinite scrolling
-  final PagingController<int, dynamic> _dogsPagingController = PagingController(
-    firstPageKey: 0,
-  );
-  final PagingController<int, dynamic> _catsPagingController = PagingController(
-    firstPageKey: 0,
-  );
-
-  static const int _pageSize = 500;
-
-  late ScrollController _scrollController;
+  final List<int> locationTierOptions = const [1, 2, 3, 4, 5];
 
   @override
   void initState() {
@@ -278,64 +281,78 @@ class EnrichmentPageState extends ConsumerState<EnrichmentPage>
         : _catsPagingController;
 
     final animalsMap = ref.watch(enrichmentViewModelProvider);
-    final accountSettings = ref.watch(accountSettingsViewModelProvider);
 
     if (animalsMap[animalType] == null || animalsMap[animalType]!.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     } else if (category == 'None') {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final double minWidth =
-                accountSettings.value!.accountSettings!.simplisticMode
-                ? 600.0
-                : 625.0;
-            final double itemHeight =
-                accountSettings.value!.accountSettings!.simplisticMode
-                ? 160.0
-                : 235.0;
-            return PagedGridView<int, dynamic>(
-              pagingController: pagingController,
-              scrollController: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              builderDelegate: PagedChildBuilderDelegate<dynamic>(
-                itemBuilder: (context, item, index) {
-                  if (item is Animal) {
-                    if (accountSettings
-                            .value!
-                            .accountSettings
-                            ?.simplisticMode ??
-                        true) {
-                      return SimplisticAnimalCardView(animal: item);
-                    } else {
-                      return AnimalCardView(
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // Fixed card size with scalable spacing (space-around semantics)
+          const double cardWidth = _cardWidth;
+          const double cardAspectRatio = _ungroupedAspectRatio;
+          final maxWidth = constraints.maxWidth;
+          final int crossAxisCount = (maxWidth / cardWidth).floor().clamp(
+            1,
+            20,
+          );
+          final leftover = maxWidth - (crossAxisCount * cardWidth);
+          final spaceAround = crossAxisCount > 0 && leftover > 0
+              ? leftover / crossAxisCount
+              : 0.0; // between tiles
+          final sidePadding = spaceAround / 2; // outer padding
+
+          // Compute effective aspect ratio based on the inner width
+          final innerWidth = maxWidth - (2 * sidePadding);
+          final tileWidth = crossAxisCount > 0
+              ? (innerWidth - spaceAround * (crossAxisCount - 1)) /
+                    crossAxisCount
+              : cardWidth;
+          final effectiveAspectRatio =
+              cardAspectRatio * (tileWidth / cardWidth);
+
+          return PagedGridView<int, dynamic>(
+            pagingController: pagingController,
+            scrollController: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: sidePadding),
+            builderDelegate: PagedChildBuilderDelegate<dynamic>(
+              itemBuilder: (context, item, index) {
+                if (item is Animal) {
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: _cardWidth),
+                      child: AnimalCardView(
                         animal: item,
                         maxLocationTiers: selectedLocationTierCount,
-                      );
-                    }
-                  } else if (item is Ad) {
-                    return CustomAffiliateAd(ad: item);
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                },
-                firstPageProgressIndicatorBuilder: (_) =>
-                    const Center(child: CircularProgressIndicator()),
-                newPageProgressIndicatorBuilder: (_) =>
-                    const Center(child: CircularProgressIndicator()),
-                noItemsFoundIndicatorBuilder: (_) =>
-                    const Center(child: Text('No animals found')),
-              ),
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: minWidth,
-                mainAxisExtent: itemHeight,
-                crossAxisSpacing: 0.0,
-                mainAxisSpacing: 0.0,
-              ),
-            );
-          },
-        ),
+                      ),
+                    ),
+                  );
+                } else if (item is Ad) {
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: _cardWidth),
+                      child: CustomAffiliateAd(ad: item),
+                    ),
+                  );
+                } else {
+                  return const SizedBox.shrink();
+                }
+              },
+              firstPageProgressIndicatorBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              newPageProgressIndicatorBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              noItemsFoundIndicatorBuilder: (_) =>
+                  const Center(child: Text('No animals found')),
+            ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: spaceAround,
+              mainAxisSpacing: 8.0,
+              childAspectRatio: effectiveAspectRatio,
+            ),
+          );
+        },
       );
     } else {
       List<Animal> allAnimals = List.from(animalsMap[animalType]!);
@@ -346,78 +363,99 @@ class EnrichmentPageState extends ConsumerState<EnrichmentPage>
         category,
       );
 
-      return Padding(
+      return ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: ListView.builder(
-          itemCount: groupedAnimals.keys.length,
-          itemBuilder: (context, index) {
-            String sectionTitle = groupedAnimals.keys.elementAt(index);
-            List<Animal> sectionAnimals = groupedAnimals[sectionTitle]!;
+        itemCount: groupedAnimals.keys.length,
+        itemBuilder: (context, index) {
+          final String sectionTitle = groupedAnimals.keys.elementAt(index);
+          final List<Animal> sectionAnimals = groupedAnimals[sectionTitle]!;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Section Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        sectionTitle,
-                        key: ValueKey('sectionHeader_$sectionTitle'),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.1,
-                          fontFamily: 'Roboto',
-                        ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sectionTitle,
+                      key: ValueKey('sectionHeader_$sectionTitle'),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                        fontFamily: 'Roboto',
                       ),
-                      const Divider(
-                        thickness: 2,
-                        color: Color.fromARGB(222, 158, 158, 158),
+                    ),
+                    const Divider(
+                      thickness: 2,
+                      color: Color.fromARGB(222, 158, 158, 158),
+                    ),
+                    const SizedBox(height: 3),
+                  ],
+                ),
+              ),
+
+              // Grid for Animals in this Section
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const double cardWidth = _cardWidth;
+                  const double cardAspectRatio = _groupedAspectRatio;
+                  final maxWidth = constraints.maxWidth;
+                  final int crossAxisCount = (maxWidth / cardWidth)
+                      .floor()
+                      .clamp(1, 20);
+                  final leftover = maxWidth - (crossAxisCount * cardWidth);
+                  final spaceAround = crossAxisCount > 0 && leftover > 0
+                      ? leftover / crossAxisCount
+                      : 0.0; // between tiles
+                  final sidePadding = spaceAround / 2; // outer padding
+
+                  // Compute effective aspect ratio based on the inner width
+                  final innerWidth = maxWidth - (2 * sidePadding);
+                  final tileWidth = crossAxisCount > 0
+                      ? (innerWidth - spaceAround * (crossAxisCount - 1)) /
+                            crossAxisCount
+                      : cardWidth;
+                  final effectiveAspectRatio =
+                      cardAspectRatio * (tileWidth / cardWidth);
+
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: sidePadding),
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: spaceAround,
+                        mainAxisSpacing: 8.0,
+                        childAspectRatio: effectiveAspectRatio,
                       ),
-                      const SizedBox(height: 3),
-                    ],
-                  ),
-                ),
+                      itemCount: sectionAnimals.length,
+                      itemBuilder: (context, itemIndex) {
+                        final Animal animal = sectionAnimals[itemIndex];
 
-                // Grid for Animals in this Section
-                GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent:
-                        accountSettings.value!.accountSettings!.simplisticMode
-                        ? 600.0
-                        : 625.0,
-                    mainAxisExtent:
-                        accountSettings.value!.accountSettings!.simplisticMode
-                        ? 160.0
-                        : 235.0,
-                    crossAxisSpacing: 8.0,
-                    mainAxisSpacing: 8.0,
-                  ),
-                  itemCount: sectionAnimals.length,
-                  itemBuilder: (context, itemIndex) {
-                    Animal animal = sectionAnimals[itemIndex];
-
-                    return accountSettings
-                                .value!
-                                .accountSettings
-                                ?.simplisticMode ??
-                            true
-                        ? SimplisticAnimalCardView(animal: animal)
-                        : AnimalCardView(
-                            animal: animal,
-                            maxLocationTiers: selectedLocationTierCount,
-                          );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: _cardWidth,
+                            ),
+                            child: AnimalCardView(
+                              animal: animal,
+                              maxLocationTiers: selectedLocationTierCount,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
       );
     }
   }
@@ -528,26 +566,6 @@ class EnrichmentPageState extends ConsumerState<EnrichmentPage>
                     ),
                     child: Column(
                       children: [
-                        SwitchToggleView(
-                          title: "Simplistic Mode",
-                          value:
-                              accountSettings
-                                  .value
-                                  ?.accountSettings
-                                  ?.simplisticMode ??
-                              true,
-                          onChanged: (bool newValue) {
-                            final user = ref.read(appUserProvider);
-                            if (user != null) {
-                              ref
-                                  .read(
-                                    accountSettingsViewModelProvider.notifier,
-                                  )
-                                  .toggleAttribute(user.id, "simplisticMode");
-                            }
-                          },
-                        ),
-
                         Row(
                           children: [
                             // Toggle simplistic mode

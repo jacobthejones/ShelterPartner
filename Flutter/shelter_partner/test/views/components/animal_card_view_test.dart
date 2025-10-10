@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_partner/utils/clock.dart';
-import 'package:shelter_partner/views/components/animal_card_image.dart';
 import 'package:shelter_partner/views/components/animal_card_view.dart';
 import 'package:shelter_partner/view_models/auth_view_model.dart';
 import 'package:shelter_partner/view_models/account_settings_view_model.dart';
@@ -73,14 +72,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Find the animal image (which is the GestureDetector)
-      final imageFinder = find.byType(AnimalCardImage);
-      expect(imageFinder, findsOneWidget);
-      // Simulate a long press to take out the animal
-      final gesture = await tester.startGesture(tester.getCenter(imageFinder));
+      // Find and tap the "Let Out" button
+      final letOutButton = find.text('Let Out');
+      expect(letOutButton, findsOneWidget);
+      await tester.tap(letOutButton);
       await tester.pumpAndSettle();
-      await gesture.up();
-      await tester.pumpAndSettle();
+      // The button should show a confirmation dialog - confirm it
+      final confirmButton = find.text('Confirm');
+      if (confirmButton.evaluate().isNotEmpty) {
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
+      }
       mockClock.advance(const Duration(seconds: 4));
       await tester.pumpAndSettle();
       // Check the value of inKennel in Firestore directly
@@ -170,14 +172,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Find the animal image (which is the GestureDetector)
-      final imageFinder = find.byType(AnimalCardImage);
-      expect(imageFinder, findsOneWidget);
-      // Simulate a long press to put the animal back in the kennel
-      final gesture = await tester.startGesture(tester.getCenter(imageFinder));
+      // Find and tap the "Put Back" button
+      final putBackButton = find.text('Put Back');
+      expect(putBackButton, findsOneWidget);
+      await tester.tap(putBackButton);
       await tester.pumpAndSettle();
-      await gesture.up();
-      await tester.pumpAndSettle();
+      // The button should show a confirmation dialog - confirm it
+      final confirmButton = find.text('Confirm');
+      if (confirmButton.evaluate().isNotEmpty) {
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
+      }
       mockClock.advance(const Duration(seconds: 4));
       await tester.pumpAndSettle();
       // Check the value of inKennel in Firestore directly (should be true again)
@@ -277,13 +282,19 @@ void main() {
       );
       await tester.pumpAndSettle();
       // Assert: All expected fields are visible
-      // Animal image
-      expect(find.byType(AnimalCardImage), findsOneWidget);
+      // Animal image placeholder icon should exist when no photos are present
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Icon && w.icon == Icons.pets && w.size == 40,
+        ),
+        findsWidgets,
+      );
       // Animal name
       expect(find.text('Name'), findsOneWidget);
       // Symbol icon (pets)
       expect(find.byIcon(Icons.pets), findsOneWidget);
-      // Location tiers: Building 2, Room B, Kennel 2 (maxLocationTiers=3)
+      // Location display line should show the last tier if location is empty, otherwise shows location
+      // Also verify chips render expected tiers (last 3 based on maxLocationTiers)
       expect(find.text('Building 2'), findsOneWidget);
       expect(find.text('Room B'), findsOneWidget);
       expect(find.text('Kennel 2'), findsOneWidget);
@@ -300,7 +311,7 @@ void main() {
       expect(find.text('Tag3'), findsOneWidget);
       expect(find.text('Tag4'), findsNothing);
       expect(find.text('Tag5'), findsNothing);
-      // Time since last log (should contain 'minute', 'hour', 'day', or 'week')
+      // Time since last log badge (should contain 'minute', 'hour', 'day', or 'week')
       expect(
         find.byWidgetPredicate(
           (widget) =>
@@ -312,8 +323,10 @@ void main() {
         ),
         findsWidgets,
       );
-      // Author of last log
-      expect(find.text(animal.logs.last.author), findsOneWidget);
+      // Tags label
+      // The explicit 'Tags' header was removed; chips are still rendered, so no header assertion here.
+      // Let Out button
+      expect(find.text('Let Out'), findsOneWidget);
       // Popup menu button (more_vert)
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });

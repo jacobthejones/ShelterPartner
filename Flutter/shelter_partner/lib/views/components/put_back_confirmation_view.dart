@@ -165,37 +165,6 @@ class PutBackConfirmationViewState
     final shelterSettings = ref.watch(shelterSettingsViewModelProvider);
     final appUser = ref.watch(appUserProvider);
 
-    if (accountSettings.value?.accountSettings?.requireEarlyPutBackReason ==
-        false) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final currentContext = context;
-
-        // Create logs for all animals
-        final logs = widget.animals
-            .map(
-              (animal) => Log(
-                id: const Uuid().v4().toString(),
-                type: '',
-                author: _nameController.text,
-                authorID: appUser?.id ?? '',
-                earlyReason: '',
-                startTime: Timestamp.now(),
-                endTime: Timestamp.now(),
-              ),
-            )
-            .toList();
-
-        // Use bulk operation for faster processing
-        final bulkPutBackViewModel = ref.read(bulkPutBackViewModelProvider);
-        await bulkPutBackViewModel.bulkPutBackAnimals(widget.animals, logs);
-
-        if (currentContext.mounted) {
-          _showThankYouDialog(currentContext);
-        }
-      });
-      return const SizedBox.shrink();
-    }
-
     if (shelterSettings.value?.shelterSettings.earlyPutBackReasons == null) {
       return const CircularProgressIndicator();
     }

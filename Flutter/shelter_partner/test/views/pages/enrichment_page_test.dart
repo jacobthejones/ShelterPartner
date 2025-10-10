@@ -3,9 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shelter_partner/views/pages/enrichment_page.dart';
 import 'package:shelter_partner/view_models/auth_view_model.dart';
-import 'package:shelter_partner/view_models/account_settings_view_model.dart';
-import 'package:shelter_partner/views/components/animal_card_view.dart';
-import 'package:shelter_partner/views/components/simplistic_animal_card_view.dart';
 
 import '../../helpers/firebase_test_overrides.dart';
 import '../../helpers/test_animal_data.dart';
@@ -32,8 +29,7 @@ bool isAnimalCardText(Element element, String name) {
     bool found = false;
     element.visitAncestorElements((ancestor) {
       final typeStr = ancestor.widget.runtimeType.toString();
-      if (typeStr.contains('AnimalCardView') ||
-          typeStr.contains('SimplisticAnimalCardView')) {
+      if (typeStr.contains('AnimalCardView')) {
         found = true;
         return false;
       }
@@ -451,98 +447,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(findSectionHeader('Puppy'), findsNothing);
         expect(findSectionHeader('Adult'), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'simplistic mode toggle should update the UI between simplistic and detailed modes',
-      (WidgetTester tester) async {
-        // Arrange: Create test user and shelter, get shared container
-        final container = await createTestUserAndLogin(
-          email: 'simplisticmodeuser@example.com',
-          password: 'testpassword',
-          firstName: 'Simple',
-          lastName: 'ModeTester',
-          shelterName: 'Test Shelter',
-          shelterAddress: '123 Test St',
-          selectedManagementSoftware: 'ShelterLuv',
-        );
-        final user = container.read(appUserProvider);
-        final shelterId = user?.shelterId ?? 'test-shelter';
-        // Add a test animal
-        await FirebaseTestOverrides.fakeFirestore
-            .collection('shelters')
-            .doc(shelterId)
-            .collection('dogs')
-            .doc('dog1')
-            .set(createTestAnimalData(id: 'dog1', name: 'Sammy'));
-        // Act
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(home: EnrichmentPage()),
-          ),
-        );
-        await tester.pumpAndSettle();
-        // Open the Additional Options expansion tile to reveal the simplistic mode toggle
-        final additionalOptionsTile = findAdditionalOptionsTile();
-        expect(additionalOptionsTile, findsOneWidget);
-        await tester.tap(additionalOptionsTile);
-        await tester.pumpAndSettle();
-        // Find the simplistic mode switch
-        final simplisticSwitch = find.byType(Switch).first;
-        expect(
-          simplisticSwitch,
-          findsOneWidget,
-          reason: 'Simplistic mode switch should be present',
-        );
-        // By default, simplistic mode should be shown (SimplisticAnimalCardView)
-        expect(
-          find.byType(SimplisticAnimalCardView),
-          findsWidgets,
-          reason:
-              'SimplisticAnimalCardView widgets should be present in simplistic mode by default',
-        );
-        // Toggle the switch to enable detailed mode
-        await tester.tap(simplisticSwitch);
-        await tester.pumpAndSettle();
-        // Now, AnimalCardView should be shown
-        expect(
-          find.byType(AnimalCardView),
-          findsWidgets,
-          reason:
-              'AnimalCardView widgets should be present after toggling to detailed mode',
-        );
-        // Confirm that the user's account settings are updated
-        final settings = container
-            .read(accountSettingsViewModelProvider)
-            .value
-            ?.accountSettings;
-        expect(
-          settings?.simplisticMode,
-          isFalse,
-          reason:
-              'Account settings should reflect simplistic mode as disabled after toggling',
-        );
-        // Toggle back to simplistic mode
-        await tester.tap(simplisticSwitch);
-        await tester.pumpAndSettle();
-        expect(
-          find.byType(SimplisticAnimalCardView),
-          findsWidgets,
-          reason:
-              'SimplisticAnimalCardView widgets should be present after toggling back to simplistic mode',
-        );
-        final settingsAfter = container
-            .read(accountSettingsViewModelProvider)
-            .value
-            ?.accountSettings;
-        expect(
-          settingsAfter?.simplisticMode,
-          isTrue,
-          reason:
-              'Account settings should reflect simplistic mode as enabled after toggling back',
-        );
       },
     );
 

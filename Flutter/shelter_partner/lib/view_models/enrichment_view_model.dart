@@ -177,7 +177,9 @@ class EnrichmentViewModel extends StateNotifier<Map<String, List<Animal>>> {
     final newState = {'cats': currentCats, 'dogs': currentDogs};
     _ignoreFirestoreUpdatesUntil = _clock.now().add(const Duration(seconds: 3));
 
-    state = newState; // This will trigger a rebuild only where it's needed
+    state = newState; // Trigger rebuild
+    // Ensure ordering reflects latest log/endTime immediately
+    _sortAnimals();
   }
 
   void _sortAnimals() {

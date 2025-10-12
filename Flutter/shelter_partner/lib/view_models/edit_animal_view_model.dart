@@ -10,32 +10,14 @@ import 'package:collection/collection.dart';
 class EditAnimalViewModel extends StateNotifier<Animal> {
   // Add a method to add a note locally (for instant UI update)
   void addNoteLocally(Note note) {
-    print(
-      '[EditAnimalViewModel] addNoteLocally called for animal: \\${state.id}, note: \\${note.toMap()}',
-    );
     final newNotes = [...state.notes, note];
-    print(
-      '[EditAnimalViewModel] new notes list: \\${newNotes.map((n) => n.toMap()).toList()}',
-    );
     state = state.copyWith(notes: newNotes);
-    print(
-      '[EditAnimalViewModel] state updated for animal: \\${state.id}, notes count: \\${state.notes.length}',
-    );
   }
 
   // Add a method to add a log locally (for instant UI update)
   void addLogLocally(Log log) {
-    print(
-      '[EditAnimalViewModel] addLogLocally called for animal: \\${state.id}, log: \\${log.toMap()}',
-    );
     final newLogs = [...state.logs, log];
-    print(
-      '[EditAnimalViewModel] new logs list: \\${newLogs.map((l) => l.toMap()).toList()}',
-    );
     state = state.copyWith(logs: newLogs);
-    print(
-      '[EditAnimalViewModel] state updated for animal: \\${state.id}, logs count: \\${state.logs.length}',
-    );
   }
 
   final EditAnimalRepository _repository;

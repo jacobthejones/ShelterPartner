@@ -23,28 +23,52 @@ class EditAnimalRepository {
     String field,
     String itemId,
   ) async {
+    _logger.debug(
+      'Deleting $field item with ID: $itemId from animal: $animalId',
+    );
+
     final documentRef = _firestore
         .collection('shelters')
         .doc(shelterId)
         .collection(animalType == "dog" ? "dogs" : "cats")
         .doc(animalId);
 
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(documentRef);
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(documentRef);
 
-      if (snapshot.exists) {
-        final data = snapshot.data();
-        final List<dynamic> items = data?[field] ?? [];
+        if (snapshot.exists) {
+          final data = snapshot.data();
+          final List<dynamic> items = data?[field] ?? [];
 
-        // Filter out the item with the matching id
-        final updatedItems = items
-            .where((item) => item['id'] != itemId)
-            .toList();
+          _logger.debug(
+            'Found ${items.length} items in $field before deletion',
+          );
 
-        // Update the field with the filtered list
-        transaction.update(documentRef, {field: updatedItems});
-      }
-    });
+          // Filter out the item with the matching id
+          final updatedItems = items
+              .where((item) => item['id'] != itemId)
+              .toList();
+
+          _logger.debug('After filtering: ${updatedItems.length} items remain');
+
+          // Update the field with the filtered list
+          transaction.update(documentRef, {field: updatedItems});
+        } else {
+          _logger.error('Animal document not found: $animalId');
+          throw Exception('Animal document not found');
+        }
+      });
+
+      _logger.debug('Successfully deleted $field item with ID: $itemId');
+    } catch (e, stackTrace) {
+      _logger.error(
+        'Failed to delete $field item with ID: $itemId',
+        e,
+        stackTrace,
+      );
+      rethrow;
+    }
   }
 
   Future<void> deletePhotoFromStorage(

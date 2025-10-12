@@ -9,9 +9,11 @@ import 'package:shelter_partner/view_models/shelter_details_view_model.dart';
 import 'package:shelter_partner/view_models/auth_view_model.dart';
 import 'package:shelter_partner/view_models/account_settings_view_model.dart';
 import 'package:shelter_partner/view_models/shelter_settings_view_model.dart';
+import 'package:shelter_partner/view_models/enrichment_view_model.dart';
 
 import 'package:shelter_partner/services/logger_service.dart';
 import 'package:shelter_partner/providers/firebase_providers.dart';
+import 'package:shelter_partner/view_models/edit_animal_view_model.dart';
 
 class AddNoteViewModel extends StateNotifier<Animal> {
   final AddNoteRepository _repository;
@@ -52,7 +54,9 @@ class AddNoteViewModel extends StateNotifier<Animal> {
   }
 
   Future<void> addNoteToAnimal(Animal animal, Note note) async {
-    _logger.debug(note.toMap().toString());
+    _logger.debug(
+      'addNoteToAnimal called with note: ${note.toMap()} for animal: ${animal.id}',
+    );
     // Get shelter ID from shelterDetailsViewModelProvider
     final shelterDetailsAsync = ref.read(shelterDetailsViewModelProvider);
     try {
@@ -61,7 +65,34 @@ class AddNoteViewModel extends StateNotifier<Animal> {
         shelterDetailsAsync.value!.id,
         note,
       );
-      // Optionally, update the state if needed
+
+      // Update the main enrichment view model with the new note
+      final enrichmentViewModel = ref.read(
+        enrichmentViewModelProvider.notifier,
+      );
+      final updatedAnimal = animal.copyWith(notes: [...animal.notes, note]);
+      enrichmentViewModel.updateAnimalOptimistically(updatedAnimal);
+
+      // Also update the EditAnimalViewModel (detail page) if it exists
+      try {
+        // Cache the animal first, then use its ID to get the provider
+        cacheAnimal(animal);
+        ref
+            .read(editAnimalViewModelProvider(animal.id).notifier)
+            .addNoteLocally(note);
+      } catch (_) {
+        // If not in detail page context, ignore
+      }
+
+      _logger.debug(
+        'addNoteToAnimal: called addNoteLocally on EditAnimalViewModel for animal: ${animal.id}',
+      );
+
+      // Update local state
+      state = updatedAnimal;
+      _logger.debug(
+        'addNoteToAnimal: updated local AddNoteViewModel state for animal: ${animal.id}',
+      );
     } catch (e) {
       // Handle error
       _logger.error('Failed to add note', e);

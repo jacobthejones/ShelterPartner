@@ -5,9 +5,39 @@ import 'package:shelter_partner/models/note.dart';
 import 'package:shelter_partner/models/photo.dart';
 import 'package:shelter_partner/models/tag.dart';
 import 'package:shelter_partner/repositories/edit_animal_repository.dart';
-import 'package:collection/collection.dart'; // Add this import
+import 'package:collection/collection.dart';
 
 class EditAnimalViewModel extends StateNotifier<Animal> {
+  // Add a method to add a note locally (for instant UI update)
+  void addNoteLocally(Note note) {
+    print(
+      '[EditAnimalViewModel] addNoteLocally called for animal: \\${state.id}, note: \\${note.toMap()}',
+    );
+    final newNotes = [...state.notes, note];
+    print(
+      '[EditAnimalViewModel] new notes list: \\${newNotes.map((n) => n.toMap()).toList()}',
+    );
+    state = state.copyWith(notes: newNotes);
+    print(
+      '[EditAnimalViewModel] state updated for animal: \\${state.id}, notes count: \\${state.notes.length}',
+    );
+  }
+
+  // Add a method to add a log locally (for instant UI update)
+  void addLogLocally(Log log) {
+    print(
+      '[EditAnimalViewModel] addLogLocally called for animal: \\${state.id}, log: \\${log.toMap()}',
+    );
+    final newLogs = [...state.logs, log];
+    print(
+      '[EditAnimalViewModel] new logs list: \\${newLogs.map((l) => l.toMap()).toList()}',
+    );
+    state = state.copyWith(logs: newLogs);
+    print(
+      '[EditAnimalViewModel] state updated for animal: \\${state.id}, logs count: \\${state.logs.length}',
+    );
+  }
+
   final EditAnimalRepository _repository;
   final Ref ref;
 
@@ -101,11 +131,31 @@ class EditAnimalViewModel extends StateNotifier<Animal> {
   }
 }
 
+// Cache to store animal instances by ID for provider initialization
+// Using a simple Map since we need to access it synchronously during provider creation
+final Map<String, Animal> _animalCache = {};
+
+// Provider that uses animal ID as the key instead of the Animal object
+// This ensures that all references to the same animal use the same provider instance
 final editAnimalViewModelProvider =
-    StateNotifierProvider.family<EditAnimalViewModel, Animal, Animal>((
+    StateNotifierProvider.family<EditAnimalViewModel, Animal, String>((
       ref,
-      animal,
+      animalId,
     ) {
       final repository = ref.watch(editAnimalRepositoryProvider);
+      final animal = _animalCache[animalId];
+
+      if (animal == null) {
+        throw StateError(
+          'Animal with ID $animalId not found in cache. Make sure to call cacheAnimal() first.',
+        );
+      }
+
       return EditAnimalViewModel(repository, ref, animal);
     });
+
+// Helper function to cache an animal
+// This is safe to call during build because it doesn't modify a provider
+void cacheAnimal(Animal animal) {
+  _animalCache[animal.id] = animal;
+}

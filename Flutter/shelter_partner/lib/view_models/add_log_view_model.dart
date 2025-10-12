@@ -3,6 +3,8 @@ import 'package:shelter_partner/models/animal.dart';
 import 'package:shelter_partner/models/log.dart';
 import 'package:shelter_partner/repositories/add_log_repository.dart';
 import 'package:shelter_partner/view_models/shelter_details_view_model.dart';
+import 'package:shelter_partner/view_models/enrichment_view_model.dart';
+import 'package:shelter_partner/view_models/edit_animal_view_model.dart';
 import 'package:shelter_partner/views/pages/enrichment_page.dart';
 import 'package:shelter_partner/providers/firebase_providers.dart';
 
@@ -23,7 +25,35 @@ class AddLogViewModel extends StateNotifier<Animal> {
         shelterDetailsAsync.value!.id,
         log,
       );
-      // Optionally, update the state if needed
+
+      // Update the main enrichment view model with the new log
+      final enrichmentViewModel = ref.read(
+        enrichmentViewModelProvider.notifier,
+      );
+      final updatedAnimal = animal.copyWith(logs: [...animal.logs, log]);
+      enrichmentViewModel.updateAnimalOptimistically(updatedAnimal);
+
+      // Also update the EditAnimalViewModel (detail page) if it exists
+      try {
+        // Cache the animal first, then use its ID to get the provider
+        cacheAnimal(animal);
+        ref
+            .read(editAnimalViewModelProvider(animal.id).notifier)
+            .addLogLocally(log);
+      } catch (_) {
+        // If not in detail page context, ignore
+      }
+
+      logger.debug(
+        'addLogToAnimal: called addLogLocally on EditAnimalViewModel for animal: ${animal.id}',
+      );
+
+      // Update local state
+      state = updatedAnimal;
+      logger.debug(
+        'addLogToAnimal: updated local AddLogViewModel state for animal: ${animal.id}',
+      );
+
       ref.read(logAddedProvider.notifier).state = true;
     } catch (e, stackTrace) {
       logger.error('Failed to add log', e, stackTrace);

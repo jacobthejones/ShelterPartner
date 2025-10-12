@@ -8,6 +8,7 @@ import 'package:shelter_partner/repositories/update_volunteer_repository.dart';
 import 'package:shelter_partner/view_models/add_log_view_model.dart';
 import 'package:shelter_partner/view_models/auth_view_model.dart';
 import 'package:shelter_partner/view_models/shelter_settings_view_model.dart';
+import 'package:shelter_partner/views/pages/enrichment_page.dart';
 import 'package:uuid/uuid.dart';
 
 class AddLogView extends ConsumerStatefulWidget {
@@ -240,6 +241,8 @@ class AddLogViewState extends ConsumerState<AddLogView> {
                       });
                   if (!context.mounted) return;
                   Navigator.of(context).pop(log);
+                  // Set the logAddedProvider to trigger refresh
+                  ref.read(logAddedProvider.notifier).state = true;
                 }
               : null,
           child: const Text('Save'),
